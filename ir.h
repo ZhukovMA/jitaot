@@ -8,8 +8,8 @@
 #include <cstdint>
 #include <set>
 #include <algorithm>
-#include <iomanip>
-#include <sstream>
+#include <iomanip>  
+#include <sstream>  
 
 using Value = std::variant<std::string, uint64_t>;
 
@@ -25,99 +25,150 @@ enum class Opcode {
     PHI_U64
 };
 
-struct Inst {
-    Opcode op{};
-    std::string res;                                  
-    std::vector<Value> ops;                           
-    std::vector<std::pair<std::string, Value>> phi;   
+class Inst {
+public:
+    virtual ~Inst() = default;
+    virtual Opcode opcode() const = 0;
+    virtual std::string result() const { return ""; }
+    virtual std::vector<Value> operands() const = 0;
+    virtual std::string toString() const = 0;
+};
 
-    Opcode opcode() const { return op; }
-    std::string result() const { return res; }
-    
-    std::vector<Value> operands() const {
-        if (op != Opcode::PHI_U64) return ops;
-        std::vector<Value> v; v.reserve(phi.size());
-        for (auto &p : phi) v.push_back(p.second);
-        return v;
-    }
-
-    static std::string valToStr(const Value& v) {
-        if (std::holds_alternative<std::string>(v)) return std::get<std::string>(v);
-        std::ostringstream oss; oss << std::get<uint64_t>(v); return oss.str();
-    }
-
-    std::string toString() const {
+class MoviInst : public Inst {
+    std::string res_;
+    uint64_t imm_;
+public:
+    MoviInst(std::string res, uint64_t imm) : res_(std::move(res)), imm_(imm) {}
+    Opcode opcode() const override { return Opcode::MOVI_U64; }
+    std::string result() const override { return res_; }
+    std::vector<Value> operands() const override { return {Value{imm_}}; }
+    std::string toString() const override {
         std::ostringstream oss;
-        auto sp = "    "; 
-
-        switch (op) {
-            case Opcode::MOVI_U64:
-                oss << "movi.u64" << sp << res << ", " << valToStr(ops.at(0)); break;
-            case Opcode::U32TOU64:
-                oss << "u32tou64" << sp << res << ", " << valToStr(ops.at(0)); break;
-            case Opcode::CMP_U64:
-                oss << "cmp.u64"  << sp << valToStr(ops.at(0)) << ", " << valToStr(ops.at(1)); break;
-            case Opcode::JA_U64:
-                oss << "ja"        << sp << valToStr(ops.at(0)); break;
-            case Opcode::MUL_U64:
-                oss << "mul.u64"  << sp << res << ", " << valToStr(ops.at(0)) << ", " << valToStr(ops.at(1)); break;
-            case Opcode::ADDI_U64:
-                oss << "addi.u64" << sp << res << ", " << valToStr(ops.at(0)) << ", " << valToStr(ops.at(1)); break;
-            case Opcode::JMP:
-                oss << "jmp"       << sp << valToStr(ops.at(0)); break;
-            case Opcode::RET_U64:
-                oss << "ret.u64"   << sp << valToStr(ops.at(0)); break;
-            case Opcode::PHI_U64: {
-                oss << "phi.u64"   << sp << res << " = ";
-                for (size_t i = 0; i < phi.size(); ++i) {
-                    if (i) oss << ", ";
-                    oss << phi[i].first << ": " << valToStr(phi[i].second);
-                }
-                break;
-            }
-        }
+        oss << "movi.u64    " << res_ << ", " << imm_;
         return oss.str();
     }
-    
-    static Inst Movi(std::string r, uint64_t imm) {
-        return {Opcode::MOVI_U64, std::move(r), {Value{imm}}, {}};
+};
+
+class CastInst : public Inst {
+    std::string res_, src_;
+public:
+    CastInst(std::string res, std::string src) : res_(std::move(res)), src_(std::move(src)) {}
+    Opcode opcode() const override { return Opcode::U32TOU64; }
+    std::string result() const override { return res_; }
+    std::vector<Value> operands() const override { return {Value{src_}}; }
+    std::string toString() const override {
+        std::ostringstream oss;
+        oss << "u32tou64    " << res_ << ", " << src_;
+        return oss.str();
     }
-    static Inst Cast(std::string r, std::string src) {
-        return {Opcode::U32TOU64, std::move(r), {Value{std::move(src)}}, {}};
+};
+
+class CmpInst : public Inst {
+    std::string left_, right_;
+public:
+    CmpInst(std::string left, std::string right) : left_(std::move(left)), right_(std::move(right)) {}
+    Opcode opcode() const override { return Opcode::CMP_U64; }
+    std::vector<Value> operands() const override { return {Value{left_}, Value{right_}}; }
+    std::string toString() const override {
+        std::ostringstream oss;
+        oss << "cmp.u64     " << left_ << ", " << right_;
+        return oss.str();
     }
-    static Inst Cmp(std::string l, std::string r) {
-        return {Opcode::CMP_U64,  "", {Value{std::move(l)}, Value{std::move(r)}}, {}};
+};
+
+class JaInst : public Inst {
+    std::string label_;
+public:
+    JaInst(std::string label) : label_(std::move(label)) {}
+    Opcode opcode() const override { return Opcode::JA_U64; }
+    std::vector<Value> operands() const override { return {Value{label_}}; }
+    std::string toString() const override { return "ja          " + label_; }
+};
+
+class MulInst : public Inst {
+    std::string res_, left_, right_;
+public:
+    MulInst(std::string res, std::string left, std::string right)
+        : res_(std::move(res)), left_(std::move(left)), right_(std::move(right)) {}
+    Opcode opcode() const override { return Opcode::MUL_U64; }
+    std::string result() const override { return res_; }
+    std::vector<Value> operands() const override { return {Value{left_}, Value{right_}}; }
+    std::string toString() const override {
+        std::ostringstream oss;
+        oss << "mul.u64     " << res_ << ", " << left_ << ", " << right_;
+        return oss.str();
     }
-    static Inst Ja(std::string label) {
-        return {Opcode::JA_U64,   "", {Value{std::move(label)}}, {}};
+};
+
+class AddiInst : public Inst {
+    std::string res_, src_;
+    uint64_t imm_;
+public:
+    AddiInst(std::string res, std::string src, uint64_t imm)
+        : res_(std::move(res)), src_(std::move(src)), imm_(imm) {}
+    Opcode opcode() const override { return Opcode::ADDI_U64; }
+    std::string result() const override { return res_; }
+    std::vector<Value> operands() const override { return {Value{src_}, Value{imm_}}; }
+    std::string toString() const override {
+        std::ostringstream oss;
+        oss << "addi.u64    " << res_ << ", " << src_ << ", " << imm_;
+        return oss.str();
     }
-    static Inst Mul(std::string r, std::string l, std::string rr) {
-        return {Opcode::MUL_U64,  std::move(r), {Value{std::move(l)}, Value{std::move(rr)}}, {}};
+};
+
+class JmpInst : public Inst {
+    std::string label_;
+public:
+    JmpInst(std::string label) : label_(std::move(label)) {}
+    Opcode opcode() const override { return Opcode::JMP; }
+    std::vector<Value> operands() const override { return {Value{label_}}; }
+    std::string toString() const override { return "jmp         " + label_; }
+};
+
+class RetInst : public Inst {
+    std::string src_;
+public:
+    RetInst(std::string src) : src_(std::move(src)) {}
+    Opcode opcode() const override { return Opcode::RET_U64; }
+    std::vector<Value> operands() const override { return {Value{src_}}; }
+    std::string toString() const override { return "ret.u64     " + src_; }
+};
+
+class PhiInst : public Inst {
+    std::string res_;
+    std::vector<std::pair<std::string, Value>> sources_;
+public:
+    PhiInst(std::string res, std::vector<std::pair<std::string, Value>> sources)
+        : res_(std::move(res)), sources_(std::move(sources)) {}
+    Opcode opcode() const override { return Opcode::PHI_U64; }
+    std::string result() const override { return res_; }
+    std::vector<Value> operands() const override {
+        std::vector<Value> ops;
+        for (auto& p : sources_) ops.push_back(p.second);
+        return ops;
     }
-    static Inst Addi(std::string r, std::string src, uint64_t imm) {
-        return {Opcode::ADDI_U64, std::move(r), {Value{std::move(src)}, Value{imm}}, {}};
-    }
-    static Inst Jmp(std::string label) {
-        return {Opcode::JMP,      "", {Value{std::move(label)}}, {}};
-    }
-    static Inst Ret(std::string src) {
-        return {Opcode::RET_U64,  "", {Value{std::move(src)}}, {}};
-    }
-    static Inst Phi(std::string r, std::vector<std::pair<std::string, Value>> sources) {
-        return {Opcode::PHI_U64,  std::move(r), {}, std::move(sources)};
+    std::string toString() const override {
+        std::string s = "phi.u64     " + res_ + " = ";
+        for (size_t i = 0; i < sources_.size(); ++i) {
+            if (i > 0) s += ", ";
+            s += sources_[i].first + ": " + std::get<std::string>(sources_[i].second);
+        }
+        return s;
     }
 };
 
 class BasicBlock {
 public:
     std::string label;
-    std::vector<Inst> insts;
+    std::vector<std::unique_ptr<Inst>> insts;
     std::vector<BasicBlock*> successors;
     std::vector<BasicBlock*> predecessors;
 
-    explicit BasicBlock(std::string lbl = "") : label(std::move(lbl)) {}
+    BasicBlock(std::string lbl = "") : label(std::move(lbl)) {}
 
-    void addInst(const Inst& i) { insts.push_back(i); }
+    void addInst(std::unique_ptr<Inst> inst) {
+        insts.push_back(std::move(inst));
+    }
 
     void addSuccessor(BasicBlock* succ) {
         successors.push_back(succ);
@@ -126,7 +177,9 @@ public:
 
     std::string toString() const {
         std::string s;
-        for (const auto& inst : insts) s += "    " + inst.toString() + "\n";
+        for (const auto& inst : insts) {
+            s += "    " + inst->toString() + "\n";
+        }
         return s;
     }
 };
@@ -136,9 +189,13 @@ class IRGraph {
     std::vector<std::unique_ptr<BasicBlock>> blocks;
 
 public:
-    struct Arg { std::string type; std::string name; };
 
-    std::string func_ret_  = "u64";
+    struct Arg {
+        std::string type;   
+        std::string name;   
+    };
+
+    std::string func_ret_ = "u64";
     std::string func_name_ = "fact";
     std::vector<Arg> func_args_ = { {"u32", "a0"} };
 
@@ -154,17 +211,41 @@ public:
         auto it = labelToBlock.find(lbl);
         return it != labelToBlock.end() ? it->second : nullptr;
     }
-    
-    Inst createMovi(std::string res, uint64_t imm) { return Inst::Movi(std::move(res), imm); }
-    Inst createCast(std::string res, std::string src){ return Inst::Cast(std::move(res), std::move(src)); }
-    Inst createCmp(std::string l, std::string r)     { return Inst::Cmp(std::move(l), std::move(r)); }
-    Inst createJa(std::string label)                 { return Inst::Ja(std::move(label)); }
-    Inst createMul(std::string r, std::string l, std::string rr){ return Inst::Mul(std::move(r), std::move(l), std::move(rr)); }
-    Inst createAddi(std::string r, std::string s, uint64_t imm) { return Inst::Addi(std::move(r), std::move(s), imm); }
-    Inst createJmp(std::string label)                { return Inst::Jmp(std::move(label)); }
-    Inst createRet(std::string src)                  { return Inst::Ret(std::move(src)); }
-    Inst createPhi(std::string r, std::vector<std::pair<std::string, Value>> srcs) {
-        return Inst::Phi(std::move(r), std::move(srcs));
+
+    std::unique_ptr<Inst> createMovi(std::string res, uint64_t imm) {
+        return std::make_unique<MoviInst>(std::move(res), imm);
+    }
+
+    std::unique_ptr<Inst> createCast(std::string res, std::string src) {
+        return std::make_unique<CastInst>(std::move(res), std::move(src));
+    }
+
+    std::unique_ptr<Inst> createCmp(std::string left, std::string right) {
+        return std::make_unique<CmpInst>(std::move(left), std::move(right));
+    }
+
+    std::unique_ptr<Inst> createJa(std::string label) {
+        return std::make_unique<JaInst>(std::move(label));
+    }
+
+    std::unique_ptr<Inst> createMul(std::string res, std::string left, std::string right) {
+        return std::make_unique<MulInst>(std::move(res), std::move(left), std::move(right));
+    }
+
+    std::unique_ptr<Inst> createAddi(std::string res, std::string src, uint64_t imm) {
+        return std::make_unique<AddiInst>(std::move(res), std::move(src), imm);
+    }
+
+    std::unique_ptr<Inst> createJmp(std::string label) {
+        return std::make_unique<JmpInst>(std::move(label));
+    }
+
+    std::unique_ptr<Inst> createRet(std::string src) {
+        return std::make_unique<RetInst>(std::move(src));
+    }
+
+    std::unique_ptr<Inst> createPhi(std::string res, std::vector<std::pair<std::string, Value>> sources) {
+        return std::make_unique<PhiInst>(std::move(res), std::move(sources));
     }
 
     void setSignature(std::string ret, std::string name, std::vector<Arg> args) {
@@ -205,29 +286,32 @@ public:
     bool checkDataFlow() const {
         for (const auto& bb : blocks) {
             std::set<std::string> defs, uses;
-
             for (const auto& inst : bb->insts) {
-                if (!inst.result().empty()) defs.insert(inst.result());
-
-                for (const auto& op : inst.operands()) {
-                    if (std::get_if<std::string>(&op)) {
-                        uses.insert(std::get<std::string>(op));
+                if (!inst->result().empty()) {
+                    defs.insert(inst->result());  
+                }
+                for (const auto& op : inst->operands()) {
+                    if (std::holds_alternative<std::string>(op)) {
+                        uses.insert(std::get<std::string>(op));  
                     }
                 }
             }
 
-            size_t versioned = std::count_if(defs.begin(), defs.end(),
-                [](const std::string& d){ return d.find(".") != std::string::npos; });
+            size_t versioned = std::count_if(defs.begin(), defs.end(), [](const std::string& d) {
+                return d.find(".") != std::string::npos;
+            });
             if (defs.size() != versioned) return false;
 
             std::set<std::string> local_uses;
             for (const auto& u : uses) {
                 size_t dot_pos = u.find(".");
-                if (dot_pos == std::string::npos && u != "a0") local_uses.insert(u);
+                if (dot_pos == std::string::npos && u != "a0") {
+                    local_uses.insert(u);
+                }
             }
 
             for (const auto& d : defs) {
-                if (local_uses.count(d)) return false;
+                if (local_uses.count(d)) return false;  
             }
         }
         return true;
@@ -238,7 +322,7 @@ public:
             auto* bb = getBlock(lbl);
             if (!bb) return false;
             std::set<Opcode> actual;
-            for (const auto& inst : bb->insts) actual.insert(inst.opcode());
+            for (const auto& inst : bb->insts) actual.insert(inst->opcode());
             if (actual != ops) return false;
         }
         return true;
