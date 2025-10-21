@@ -1,0 +1,11 @@
+movi.u64 v0, 1
+movi.u64 v1, 2
+u32tou64 v2, a0
+loop:
+cmp.u64 v1, v2
+ja done
+mul.u64 v0, v0, v1
+addi.u64 v1, v1, 1
+jmp loop
+done:
+ret.u64 v0
