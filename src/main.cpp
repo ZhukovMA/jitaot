@@ -24,11 +24,17 @@ int main(int argc, char **argv) {
     DomInfo D = computeDominators(P);
     printDominatorTree(P, D);
 
-    if (!runUnitTests(P, D, &err)) {
-        cerr << "TEST FAILED: " << err << "\n";
+    if (!runDomUnitTests(P, D, &err)) {
+        cerr << "[SDOM TEST] FAILED: " << err << "\n";
         return 2;
     }
-    cout << "TEST OK\n";
+    cout << "[SDOM TEST] OK\n";
+
+    if (!runRPOUnitTests(P, &err)) {
+        cerr << "[RPO TEST] FAILED: " << err << "\n";
+        return 2;
+    }
+    cout << "[RPO TEST] OK\n";
 
     placePhi(P, D);
     int nextId = 0;

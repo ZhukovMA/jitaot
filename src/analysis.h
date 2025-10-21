@@ -27,5 +27,7 @@ void phi2Instructions(Graph &P);
 void buildUseDefLinks(Graph &P);
 void dumpIR(const Graph &P);
 
-bool runUnitTests(const Graph &P, const DomInfo &D, std::string *outErr);
+bool runDomUnitTests(const Graph &P, const DomInfo &D, std::string *outErr);
+bool runRPOUnitTests(const Graph &P, std::string *outErr);
+
 void printDominatorTree(const Graph &P, const DomInfo &D);

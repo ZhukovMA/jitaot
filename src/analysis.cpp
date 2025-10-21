@@ -317,7 +317,7 @@ bool dominatesViaIdom(const DomInfo &D, int a, int b) {
     return false;
 }
 
-bool runUnitTests(const Graph &P, const DomInfo &D, std::string *outErr) {
+bool runDomUnitTests(const Graph &P, const DomInfo &D, std::string *outErr) {
     auto fail = [&](const std::string &msg) { if(outErr) *outErr = msg; return false; };
     const int N = (int)P.blocks.size();
 
@@ -373,6 +373,27 @@ bool runUnitTests(const Graph &P, const DomInfo &D, std::string *outErr) {
     if (!dominatesViaIdom(D, preheader, exitb))
         return fail("preheader must dominate exit");
 
+    return true;
+}
+
+static string vec2s(const vector<int> &v) {
+    string s;
+    for (size_t i = 0; i < v.size(); ++i) {
+        if (i)
+            s += ",";
+        s += to_string(v[i]);
+    }
+    return s;
+}
+
+bool runRPOUnitTests(const Graph &P, std::string *outErr) {
+    auto fail = [&](const std::string &msg) { if(outErr) *outErr = "[RPO TEST] " + msg; return false; };
+    if (!(P.entry >= 0 && P.entry < (int)P.blocks.size()))
+        return fail("bad entry");
+    vector<int> rpo = computeRPO(P);
+    vector<int> exp = {0, 1, 2, 3};
+    if (rpo != exp)
+        return fail("expected RPO [0,1,2,3], got [" + vec2s(rpo) + "]");
     return true;
 }
 
