@@ -16,7 +16,11 @@ int main(int argc, char **argv) {
     }
     Graph P = std::move(*parsed);
     buildBlocks(P);
-
+    auto rpo = computeRPO(P);
+    std::cerr << "RPO:";
+    for (int b : rpo)
+        std::cerr << " B" << b;
+    std::cerr << "\n";
     DomInfo D = computeDominators(P);
     printDominatorTree(P, D);
 

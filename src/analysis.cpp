@@ -6,6 +6,29 @@
 
 using namespace std;
 
+std::vector<int> computeRPO(const Graph &P) {
+    const int N = (int)P.blocks.size();
+    std::vector<char> vis(N, 0);
+    std::vector<int> post, rpo;
+    if (P.entry < 0 || P.entry >= N)
+        return rpo;
+
+    std::function<void(int)> dfs = [&](int b) {
+        vis[b] = 1;
+        for (int s : P.blocks[b].successors) {
+            if (s < 0 || s >= N)
+                continue;
+            if (!vis[s])
+                dfs(s);
+        }
+        post.push_back(b);
+    };
+    dfs(P.entry);
+
+    rpo.assign(post.rbegin(), post.rend());
+    return rpo;
+}
+
 DomInfo computeDominators(const Graph &P) {
     const int N = (int)P.blocks.size();
     if (N == 0)

@@ -12,6 +12,7 @@ struct DomInfo {
 };
 
 DomInfo computeDominators(const Graph &P);
+std::vector<int> computeRPO(const Graph &P);
 void placePhi(Graph &P, const DomInfo &D);
 struct RS {
     std::unordered_map<std::string, std::vector<std::string>> st;
