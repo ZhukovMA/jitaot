@@ -1,6 +1,9 @@
-#include "ir.h"
+#include "ir/ir_graph.h"
 #include <algorithm>
 #include <cassert>
+#include "tests/test_functions.h"
+
+using namespace ir;
 
 int main() {
     IRGraph graph;
@@ -12,7 +15,6 @@ int main() {
     auto *done = graph.createBlock("done");
 
     SSAValue *a0 = graph.createArg("u32", "a0");
-
     SSAValue *v0_0 = graph.createValue();
     SSAValue *v1_0 = graph.createValue();
     SSAValue *v2_0 = graph.createValue();
@@ -26,18 +28,13 @@ int main() {
     entry->addInst(graph.createCast(v2_0, a0));
     entry->addSuccessor(loop_header);
 
-    {
-        std::vector<std::pair<BasicBlock *, SSAValue *>> phi_v0 = {
-            {entry, v0_0},
-            {body, v0_2}};
-        loop_header->addInst(graph.createPhi(v0_1, phi_v0));
-    }
-    {
-        std::vector<std::pair<BasicBlock *, SSAValue *>> phi_v1 = {
-            {entry, v1_0},
-            {body, v1_2}};
-        loop_header->addInst(graph.createPhi(v1_1, phi_v1));
-    }
+    std::vector<std::pair<BasicBlock *, SSAValue *>> phi_v0 = {
+        {entry, v0_0}, {body, v0_2}};
+    loop_header->addInst(graph.createPhi(v0_1, phi_v0));
+
+    std::vector<std::pair<BasicBlock *, SSAValue *>> phi_v1 = {
+        {entry, v1_0}, {body, v1_2}};
+    loop_header->addInst(graph.createPhi(v1_1, phi_v1));
 
     loop_header->addInst(graph.createCmp(v1_1, v2_0));
     loop_header->addInst(graph.createJa(done));
@@ -66,9 +63,21 @@ int main() {
         {"body", {"loop"}},
         {"done", {}}};
     assert(graph.checkControlFlow(expected_cf) && "control flow error");
-
+    std::cout << "CFG OK.\n";
     assert(graph.checkDataFlow() && "Data flow error");
+    std::cout << "DataFlow OK.\n";
 
-    std::cout << "OK." << std::endl;
+    testExample1();
+    testExample2();
+    testExample3();
+
+    test1();
+    test2();
+    test3();
+    testLoopsExample1();
+    testLoopsExample2();
+    testLoopsExample3();
+    std::cout << "All tests passed.\n";
+
     return 0;
 }
