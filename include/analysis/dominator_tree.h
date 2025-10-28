@@ -20,7 +20,7 @@ struct DominatorTree {
     
     std::unordered_map<BasicBlock *, int> idx_; 
     std::vector<BasicBlock *> vertex_;          
-    std::vector<int> parent_, semi_, idom_, ancestor_, label_;
+    std::vector<int> parent_, sdom_, idom_, ancestor_, label_;
     std::vector<std::vector<int>> pred_, bucket_;
     int N_ = 0;
     
@@ -58,7 +58,7 @@ struct DominatorTree {
     void compress(int v) {
         if (ancestor_[ancestor_[v]] != 0) {
             compress(ancestor_[v]);
-            if (semi_[label_[ancestor_[v]]] < semi_[label_[v]])
+            if (sdom_[label_[ancestor_[v]]] < sdom_[label_[v]])
                 label_[v] = label_[ancestor_[v]];
             ancestor_[v] = ancestor_[ancestor_[v]];
         }
@@ -67,7 +67,7 @@ struct DominatorTree {
         if (ancestor_[v] == 0)
             return label_[v];
         compress(v);
-        return (semi_[label_[ancestor_[v]]] < semi_[label_[v]])
+        return (sdom_[label_[ancestor_[v]]] < sdom_[label_[v]])
                    ? label_[ancestor_[v]]
                    : label_[v];
     }
@@ -99,24 +99,24 @@ struct DominatorTree {
             return;
         buildPredecessors(); 
 
-        semi_.assign(N_ + 1, 0);
+        sdom_.assign(N_ + 1, 0);
         idom_.assign(N_ + 1, 0);
         ancestor_.assign(N_ + 1, 0);
         label_.assign(N_ + 1, 0);
         bucket_.assign(N_ + 1, {});
         for (int i = 1; i <= N_; ++i) {
-            semi_[i] = i;
+            sdom_[i] = i;
             label_[i] = i;
         }
         
         for (int w = N_; w >= 2; --w) {
             for (int v : pred_[w]) {
                 int u = eval(v);
-                if (semi_[u] < semi_[w])
-                    semi_[w] = semi_[u];
+                if (sdom_[u] < sdom_[w])
+                    sdom_[w] = sdom_[u];
             }
             
-            bucket_[semi_[w]].push_back(w);
+            bucket_[sdom_[w]].push_back(w);
 
             link(parent_[w], w);
             
@@ -126,17 +126,17 @@ struct DominatorTree {
                 B.pop_back();
                 int u = eval(v);
                 
-                if (semi_[u] < semi_[v])
+                if (sdom_[u] < sdom_[v])
                     idom_[v] = u;
                 else
-                    idom_[v] = semi_[v];
+                    idom_[v] = sdom_[v];
             }
         }
 
         idom_[1] = 0; 
         for (int w = 2; w <= N_; ++w) {
             
-            if (idom_[w] != semi_[w])
+            if (idom_[w] != sdom_[w])
                 idom_[w] = idom_[idom_[w]];
         }
         
