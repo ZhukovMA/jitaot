@@ -23,7 +23,6 @@ struct DominatorTree {
     std::vector<int> parent_, semi_, idom_, ancestor_, label_;
     std::vector<std::vector<int>> pred_, bucket_;
     int N_ = 0;
-
     
     void reset_() {
         idx_.clear();
@@ -46,19 +45,16 @@ struct DominatorTree {
                 dfsVisit_(s, me);
         }
     }
-
     
     void dfsNumbering(BasicBlock *start) {
         reset_();
         dfsVisit_(start, 0);
     }
 
-    
     inline void link(int p, int v) {
         ancestor_[v] = p;
     }
 
-    
     void compress(int v) {
         if (ancestor_[ancestor_[v]] != 0) {
             compress(ancestor_[v]);
@@ -97,14 +93,12 @@ struct DominatorTree {
         dom_children.clear();
         if (!r)
             return;
-
         
         dfsNumbering(r); 
         if (N_ == 0)
             return;
         buildPredecessors(); 
 
-        
         semi_.assign(N_ + 1, 0);
         idom_.assign(N_ + 1, 0);
         ancestor_.assign(N_ + 1, 0);
@@ -114,22 +108,17 @@ struct DominatorTree {
             semi_[i] = i;
             label_[i] = i;
         }
-
         
         for (int w = N_; w >= 2; --w) {
-            
             for (int v : pred_[w]) {
                 int u = eval(v);
                 if (semi_[u] < semi_[w])
                     semi_[w] = semi_[u];
             }
-
             
             bucket_[semi_[w]].push_back(w);
 
-            
             link(parent_[w], w);
-
             
             auto &B = bucket_[parent_[w]];
             while (!B.empty()) {
@@ -144,14 +133,12 @@ struct DominatorTree {
             }
         }
 
-        
         idom_[1] = 0; 
         for (int w = 2; w <= N_; ++w) {
             
             if (idom_[w] != semi_[w])
                 idom_[w] = idom_[idom_[w]];
         }
-
         
         for (int i = 1; i <= N_; ++i) {
             BasicBlock *b = vertex_[i];

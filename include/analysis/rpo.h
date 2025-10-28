@@ -10,7 +10,7 @@ class BasicBlock;
 
 namespace analysis {
 using ir::BasicBlock;
-struct RPOOrder {
+struct RPO {
     std::vector<BasicBlock *> rpo;
 
     void run(BasicBlock *start) {

@@ -29,7 +29,6 @@ struct LoopAnalyzer {
     std::vector<std::unique_ptr<Loop>> loops;             
     std::unordered_map<BasicBlock *, Loop *> loopOfBlock; 
     Loop *rootLoop = nullptr;                             
-
     
     DominatorTree DT;
     std::unordered_map<BasicBlock *, int> dfsNum;                 
@@ -43,20 +42,13 @@ struct LoopAnalyzer {
         backEdges.clear();
         dfsNum.clear();
         preorder.clear();
-
         
         DT.build(entry);
 
-        
         collectBackEdges(entry);
-
-        
         populateLoops(entry);
-
-        
         buildLoopTree(entry);
     }
-
     
     void collectBackEdges(BasicBlock *start) {
         enum Color {
@@ -89,7 +81,6 @@ struct LoopAnalyzer {
         };
         dfs(start);
     }
-
     
     void populateLoops(BasicBlock *entry) {
         
@@ -116,15 +107,12 @@ struct LoopAnalyzer {
         for (auto *H : headers) {
             auto L = std::make_unique<Loop>();
             L->header = H;
-
             
             for (auto *src : srcs[H]) {
                 L->latches.push_back(src);
                 if (!dominates(H, src))
                     L->irreducible = true;
             }
-
-            
             
             std::unordered_set<BasicBlock *> inLoop;
             inLoop.insert(H);
@@ -158,10 +146,7 @@ struct LoopAnalyzer {
                 }
             }
 
-            
             L->blocks.assign(inLoop.begin(), inLoop.end());
-
-            
             
             for (auto *b : L->blocks) {
                 if (b == H)
@@ -174,7 +159,6 @@ struct LoopAnalyzer {
             loops.push_back(std::move(L));
         }
     }
-
     
     static bool isAncestor(Loop *L1, Loop *L2) {
         for (auto *p = L2 ? L2->parent : nullptr; p; p = p->parent)
@@ -182,7 +166,6 @@ struct LoopAnalyzer {
                 return true;
         return false;
     }
-
     
     void buildLoopTree(BasicBlock *entry) {
         

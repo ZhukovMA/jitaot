@@ -11,7 +11,7 @@ class BasicBlock;
 
 namespace analysis {
 using ir::BasicBlock;
-struct DFSOrder {
+struct DFS {
     std::vector<BasicBlock *> preorder;
 
     void run(BasicBlock *start) {

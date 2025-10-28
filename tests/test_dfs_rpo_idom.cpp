@@ -124,11 +124,11 @@ static BuiltCFG buildExample3() {
 void testExample1() {
     auto W = buildExample1();
 
-    DFSOrder dfs;
+    DFS dfs;
     dfs.run(W.entry);
     expectOrder(dfs.preorder, {"A", "B", "C", "E", "D", "F", "G"});
 
-    RPOOrder rpo;
+    RPO rpo;
     rpo.run(W.entry);
     expectOrder(rpo.rpo, {"A", "B", "F", "G", "C", "E", "D"});
 
@@ -148,11 +148,11 @@ void testExample1() {
 void testExample2() {
     auto W = buildExample2();
 
-    DFSOrder dfs;
+    DFS dfs;
     dfs.run(W.entry);
     expectOrder(dfs.preorder, {"A", "B", "C", "D", "E", "F", "G", "H", "I", "K", "J"});
 
-    RPOOrder rpo;
+    RPO rpo;
     rpo.run(W.entry);
     expectOrder(rpo.rpo, {"A", "B", "J", "C", "D", "E", "F", "G", "I", "K", "H"});
 
@@ -176,11 +176,11 @@ void testExample2() {
 void testExample3() {
     auto W = buildExample3();
 
-    DFSOrder dfs;
+    DFS dfs;
     dfs.run(W.entry);
     expectOrder(dfs.preorder, {"A", "B", "C", "D", "G", "I", "E", "F", "H"});
 
-    RPOOrder rpo;
+    RPO rpo;
     rpo.run(W.entry);
     expectOrder(rpo.rpo, {"A", "B", "E", "F", "H", "C", "D", "G", "I"});
 
