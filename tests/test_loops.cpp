@@ -251,17 +251,20 @@ void testLoopsExample2() {
     LoopAnalyzer LA;
     LA.run(W.entry);
 
-    
+
     Loop *LB = findLoopByHeader(LA, W.byName["B"]);
     Loop *LC = findLoopByHeader(LA, W.byName["C"]);
     Loop *LE = findLoopByHeader(LA, W.byName["E"]);
     assert(LB && LC && LE);
 
+    assert(!LB->irreducible);
+    assert(!LC->irreducible);
+    assert(!LE->irreducible);
+
     setEq(LB->latches, {"H"});
     setEq(LC->latches, {"D"});
     setEq(LE->latches, {"F"});
 
-    
     assert(LC->parent == LB && LE->parent == LB);
     assert(hasChild(LB, LC) && hasChild(LB, LE));
     assert(LB->parent == LA.rootLoop);
@@ -272,10 +275,12 @@ void testLoopsExample3() {
     LoopAnalyzer LA;
     LA.run(W.entry);
 
-    
     Loop *LB = findLoopByHeader(LA, W.byName["B"]);
     Loop *LC = findLoopByHeader(LA, W.byName["C"]);
     assert(LB && LC);
+
+    assert(!LB->irreducible);
+    assert(LC->irreducible);
 
     setEq(LB->latches, {"H"});
     setEq(LC->latches, {"G"});
