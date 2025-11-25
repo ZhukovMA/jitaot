@@ -1,0 +1,22 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run cfg_builder_reg (CodeLLDB)",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/cfg_builder_reg",
+      "args": ["${workspaceFolder}/fact.regbc"],
+      "cwd": "${workspaceFolder}",
+      "stopOnEntry": false
+    }
+  ],
+  "inputs": [
+    {
+      "id": "regbc",
+      "type": "promptString",
+      "description": "Путь к входному .regbc",
+      "default": "${workspaceFolder}/fact.regbc"
+    }
+  ]
+}

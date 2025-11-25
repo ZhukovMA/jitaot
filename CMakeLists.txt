@@ -17,6 +17,8 @@ add_executable(tests
     main.cpp
     tests/test_dfs_rpo_idom.cpp
     tests/test_loops.cpp
+    tests/test_constant_folding.cpp
+    tests/test_peephole.cpp
 )
 
 target_link_libraries(tests PRIVATE analysis ir)

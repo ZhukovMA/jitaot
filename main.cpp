@@ -1,7 +1,9 @@
+#include "analysis/constant_folding.h"
+#include "analysis/peephole.h"
 #include "ir/ir_graph.h"
+#include "tests/test_functions.h"
 #include <algorithm>
 #include <cassert>
-#include "tests/test_functions.h"
 
 using namespace ir;
 
@@ -77,6 +79,18 @@ int main() {
     testLoopsExample1();
     testLoopsExample2();
     testLoopsExample3();
+
+    // Constant folding
+    testCF_MulShl_chain();
+    testCF_And_chain();
+    testCF_ShlClamp();
+
+    // Peephole
+    testPH_MulIdentities();
+    testPH_MulPow2ToShl();
+    testPH_AndIdentities();
+    testPH_ShlRules();
+
     std::cout << "All tests passed.\n";
 
     return 0;

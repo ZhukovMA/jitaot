@@ -2,17 +2,16 @@
 #include "ir/opcode.h"
 #include "ir/value.h"
 #include <memory>
+#include <sstream>
 #include <string>
 #include <vector>
-#include <sstream>
 
 namespace ir {
 
-class BasicBlock; 
-
+class BasicBlock;
 
 static inline std::string bbName(const BasicBlock *b) {
-    
+
     return b ? std::string("<bb>") : std::string("<null>");
 }
 static inline std::string fmtVal(const SSAValue *v) {
@@ -27,12 +26,15 @@ class Inst {
   public:
     virtual ~Inst() = default;
     virtual Opcode opcode() const = 0;
-    
+
     virtual SSAValue *result() const {
         return nullptr;
     }
-    
+
     virtual std::vector<Value> operands() const = 0;
+
+    virtual void replaceOperand(SSAValue *, SSAValue *) {
+    }
     virtual std::string toString() const = 0;
 };
 
@@ -58,6 +60,10 @@ class MoviInst : public Inst {
         std::ostringstream oss;
         oss << "movi.u64    " << fmtVal(res_) << ", " << imm_;
         return oss.str();
+    }
+
+    uint64_t imm() const {
+        return imm_;
     }
 };
 
@@ -86,6 +92,13 @@ class CastInst : public Inst {
         oss << "u32tou64    " << fmtVal(res_) << ", " << fmtVal(src_);
         return oss.str();
     }
+
+    void replaceOperand(SSAValue *from, SSAValue *to) override {
+        if (src_ == from) {
+            src_ = to;
+            to->addUser(this);
+        }
+    }
 };
 
 class CmpInst : public Inst {
@@ -109,6 +122,17 @@ class CmpInst : public Inst {
         std::ostringstream oss;
         oss << "cmp.u64     " << fmtVal(left_) << ", " << fmtVal(right_);
         return oss.str();
+    }
+
+    void replaceOperand(SSAValue *from, SSAValue *to) override {
+        if (left_ == from) {
+            left_ = to;
+            to->addUser(this);
+        }
+        if (right_ == from) {
+            right_ = to;
+            to->addUser(this);
+        }
     }
 };
 
@@ -158,6 +182,16 @@ class MulInst : public Inst {
         oss << "mul.u64     " << fmtVal(res_) << ", " << fmtVal(left_) << ", " << fmtVal(right_);
         return oss.str();
     }
+    void replaceOperand(SSAValue *from, SSAValue *to) override {
+        if (left_ == from) {
+            left_ = to;
+            to->addUser(this);
+        }
+        if (right_ == from) {
+            right_ = to;
+            to->addUser(this);
+        }
+    }
 };
 
 class AddiInst : public Inst {
@@ -186,6 +220,13 @@ class AddiInst : public Inst {
         std::ostringstream oss;
         oss << "addi.u64    " << fmtVal(res_) << ", " << fmtVal(src_) << ", " << imm_;
         return oss.str();
+    }
+
+    void replaceOperand(SSAValue *from, SSAValue *to) override {
+        if (src_ == from) {
+            src_ = to;
+            to->addUser(this);
+        }
     }
 };
 
@@ -222,6 +263,13 @@ class RetInst : public Inst {
     }
     std::string toString() const override {
         return "ret.u64     " + fmtVal(src_);
+    }
+
+    void replaceOperand(SSAValue *from, SSAValue *to) override {
+        if (src_ == from) {
+            src_ = to;
+            to->addUser(this);
+        }
     }
 };
 
@@ -266,6 +314,95 @@ class PhiInst : public Inst {
         }
         return oss.str();
     }
+
+    void replaceOperand(SSAValue *from, SSAValue *to) override {
+        for (auto &kv : sources_) {
+            if (kv.second == from) {
+                kv.second = to;
+                to->addUser(this);
+            }
+        }
+    }
 };
 
-} 
+class AndInst : public Inst {
+    SSAValue *res_;
+    SSAValue *x_;
+    SSAValue *y_;
+
+  public:
+    AndInst(SSAValue *r, SSAValue *x, SSAValue *y) : res_(r), x_(x), y_(y) {
+        if (res_)
+            res_->def = this;
+        if (x_)
+            x_->addUser(this);
+        if (y_)
+            y_->addUser(this);
+    }
+    Opcode opcode() const override {
+        return Opcode::AND_U64;
+    }
+    SSAValue *result() const override {
+        return res_;
+    }
+    std::vector<Value> operands() const override {
+        return {Value{x_}, Value{y_}};
+    }
+    void replaceOperand(SSAValue *from, SSAValue *to) override {
+        if (x_ == from) {
+            x_ = to;
+            to->addUser(this);
+        }
+        if (y_ == from) {
+            y_ = to;
+            to->addUser(this);
+        }
+    }
+    std::string toString() const override {
+        std::ostringstream oss;
+        oss << "and.u64     " << fmtVal(res_) << ", " << fmtVal(x_) << ", " << fmtVal(y_);
+        return oss.str();
+    }
+};
+
+class ShlInst : public Inst {
+    SSAValue *res_;
+    SSAValue *x_;
+    SSAValue *s_;
+
+  public:
+    ShlInst(SSAValue *r, SSAValue *x, SSAValue *s) : res_(r), x_(x), s_(s) {
+        if (res_)
+            res_->def = this;
+        if (x_)
+            x_->addUser(this);
+        if (s_)
+            s_->addUser(this);
+    }
+    Opcode opcode() const override {
+        return Opcode::SHL_U64;
+    }
+    SSAValue *result() const override {
+        return res_;
+    }
+    std::vector<Value> operands() const override {
+        return {Value{x_}, Value{s_}};
+    }
+    void replaceOperand(SSAValue *from, SSAValue *to) override {
+        if (x_ == from) {
+            x_ = to;
+            to->addUser(this);
+        }
+        if (s_ == from) {
+            s_ = to;
+            to->addUser(this);
+        }
+    }
+    std::string toString() const override {
+        std::ostringstream oss;
+        oss << "shl.u64     " << fmtVal(res_) << ", " << fmtVal(x_) << ", " << fmtVal(s_);
+        return oss.str();
+    }
+};
+
+} // namespace ir

@@ -1,12 +1,12 @@
 #pragma once
 #include "ir/basic_block.h"
 #include "ir/inst.h"
+#include <algorithm>
+#include <iostream>
 #include <map>
 #include <memory>
-#include <vector>
-#include <algorithm>
 #include <set>
-#include <iostream>
+#include <vector>
 
 namespace ir {
 struct Arg {
@@ -94,6 +94,13 @@ class IRGraph {
     }
     std::unique_ptr<Inst> createPhi(SSAValue *res, std::vector<std::pair<BasicBlock *, SSAValue *>> sources) {
         return std::make_unique<PhiInst>(res, std::move(sources));
+    }
+
+    std::unique_ptr<Inst> createAnd(SSAValue *r, SSAValue *x, SSAValue *y) {
+        return std::make_unique<AndInst>(r, x, y);
+    }
+    std::unique_ptr<Inst> createShl(SSAValue *r, SSAValue *x, SSAValue *s) {
+        return std::make_unique<ShlInst>(r, x, s);
     }
 
     void setSignature(std::string ret, std::string name, std::vector<Arg> args) {
@@ -196,4 +203,4 @@ class IRGraph {
         return true;
     }
 };
-} 
+} // namespace ir
