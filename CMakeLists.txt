@@ -17,6 +17,7 @@ add_executable(tests
     main.cpp
     tests/test_dfs_rpo_idom.cpp
     tests/test_loops.cpp
+    tests/test_linear_order_liveness.cpp
     tests/test_constant_folding.cpp
     tests/test_peephole.cpp
 )

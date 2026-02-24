@@ -20,3 +20,5 @@ void testPH_MulIdentities();
 void testPH_MulPow2ToShl();
 void testPH_AndIdentities();
 void testPH_ShlRules();
+
+void testLinearOrderAndLiveness();

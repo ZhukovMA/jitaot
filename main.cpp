@@ -91,6 +91,9 @@ int main() {
     testPH_AndIdentities();
     testPH_ShlRules();
 
+    // Linear order andd liveness
+    testLinearOrderAndLiveness();
+
     std::cout << "All tests passed.\n";
 
     return 0;
