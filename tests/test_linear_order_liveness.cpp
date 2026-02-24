@@ -284,93 +284,93 @@ static Graph3 buildGraph3() {
 
 } // namespace
 
+static void checkLinearOrder(ir::BasicBlock *entry) {
+    analysis::LinearOrder ord;
+    ord.run(entry);
+    assertDominatorsBefore(ord, entry);
+    assertLoopContiguous(ord, ord.loops);
+}
+
+static void testGraph1_LinearOrderAndLiveness() {
+    auto G = buildGraph1();
+    checkLinearOrder(G.entry);
+    analysis::LivenessAnalysis LA;
+    LA.run(G.entry);
+
+    auto bpEntry = LA.blockPosition(G.entry);
+    auto bpBody = LA.blockPosition(G.body);
+    auto bpHeader = LA.blockPosition(G.header);
+    auto loopEnd = LA.linearOrder().loopEnd.at(G.header);
+    auto bpLoopEnd = LA.blockPosition(loopEnd);
+
+    auto *limit = G.inst_movi_limit->result();
+    auto *liLimit = LA.getInterval(limit);
+    assert(liLimit);
+    assert(liLimit->covers(bpHeader.from));
+    assert(liLimit->covers(bpLoopEnd.to - 1));
+
+    auto *res0 = G.inst_movi_res->result();
+    auto *liRes0 = LA.getInterval(res0);
+    assert(liRes0);
+    assert(liRes0->end() == bpEntry.to);
+
+    auto *res2 = G.inst_mul->result();
+    auto *liRes2 = LA.getInterval(res2);
+    assert(liRes2);
+    assert(liRes2->end() == bpBody.to);
+
+    auto liveAtCmp = LA.liveValuesAt(G.inst_cmp);
+    assert(std::find(liveAtCmp.begin(), liveAtCmp.end(), limit) != liveAtCmp.end());
+    auto *i1 = std::get<ir::SSAValue *>(G.inst_cmp->operands()[0]);
+    assert(std::find(liveAtCmp.begin(), liveAtCmp.end(), i1) != liveAtCmp.end());
+
+    (void)bpHeader;
+    (void)bpLoopEnd;
+}
+
+static void testGraph2_LinearOrderAndLiveness() {
+    auto G = buildGraph2();
+
+    checkLinearOrder(G.entry);
+    analysis::LivenessAnalysis LA;
+    LA.run(G.entry);
+
+    auto bpThen = LA.blockPosition(G.thenb);
+    auto bpElse = LA.blockPosition(G.elseb);
+    auto *liThen = LA.getInterval(G.inst_then_add);
+    auto *liElse = LA.getInterval(G.inst_else_add);
+    assert(liThen && liElse);
+    assert(liThen->end() == bpThen.to);
+    assert(liElse->end() == bpElse.to);
+
+    auto liveAtLoopCmp = LA.liveValuesAt(G.inst_cmp_loop);
+    auto *i = std::get<ir::SSAValue *>(G.inst_cmp_loop->operands()[0]);
+    auto *N = std::get<ir::SSAValue *>(G.inst_cmp_loop->operands()[1]);
+    assert(std::find(liveAtLoopCmp.begin(), liveAtLoopCmp.end(), i) != liveAtLoopCmp.end());
+    assert(std::find(liveAtLoopCmp.begin(), liveAtLoopCmp.end(), N) != liveAtLoopCmp.end());
+}
+
+static void testGraph3_LinearOrderAndLiveness() {
+    auto G = buildGraph3();
+
+    checkLinearOrder(G.entry);
+    analysis::LivenessAnalysis LA;
+    LA.run(G.entry);
+    auto liveAtOuter = LA.liveValuesAt(G.inst_outer_cmp);
+    auto *i = std::get<ir::SSAValue *>(G.inst_outer_cmp->operands()[0]);
+    auto *N = std::get<ir::SSAValue *>(G.inst_outer_cmp->operands()[1]);
+    assert(std::find(liveAtOuter.begin(), liveAtOuter.end(), i) != liveAtOuter.end());
+    assert(std::find(liveAtOuter.begin(), liveAtOuter.end(), N) != liveAtOuter.end());
+
+    auto liveAtInner = LA.liveValuesAt(G.inst_inner_cmp);
+    auto *j = std::get<ir::SSAValue *>(G.inst_inner_cmp->operands()[0]);
+    auto *M = std::get<ir::SSAValue *>(G.inst_inner_cmp->operands()[1]);
+    assert(std::find(liveAtInner.begin(), liveAtInner.end(), j) != liveAtInner.end());
+    assert(std::find(liveAtInner.begin(), liveAtInner.end(), M) != liveAtInner.end());
+}
+
 void testLinearOrderAndLiveness() {
-    {
-        auto G = buildGraph1();
-        analysis::LinearOrder ord;
-        ord.run(G.entry);
-        assertDominatorsBefore(ord, G.entry);
-        assertLoopContiguous(ord, ord.loops);
-
-        analysis::LivenessAnalysis LA;
-        LA.run(G.entry);
-
-        auto bpEntry = LA.blockPosition(G.entry);
-        auto bpBody = LA.blockPosition(G.body);
-        auto bpHeader = LA.blockPosition(G.header);
-        auto loopEnd = LA.linearOrder().loopEnd.at(G.header);
-        auto bpLoopEnd = LA.blockPosition(loopEnd);
-
-        auto *limit = G.inst_movi_limit->result();
-        auto *liLimit = LA.getInterval(limit);
-        assert(liLimit);
-        assert(liLimit->covers(bpHeader.from));
-        assert(liLimit->covers(bpLoopEnd.to - 1));
-
-        auto *res0 = G.inst_movi_res->result();
-        auto *liRes0 = LA.getInterval(res0);
-        assert(liRes0);
-        assert(liRes0->end() == bpEntry.to);
-
-        auto *res2 = G.inst_mul->result();
-        auto *liRes2 = LA.getInterval(res2);
-        assert(liRes2);
-        assert(liRes2->end() == bpBody.to);
-
-        auto liveAtCmp = LA.liveValuesAt(G.inst_cmp);
-        assert(std::find(liveAtCmp.begin(), liveAtCmp.end(), limit) != liveAtCmp.end());
-        auto *i1 = std::get<ir::SSAValue *>(G.inst_cmp->operands()[0]);
-        assert(std::find(liveAtCmp.begin(), liveAtCmp.end(), i1) != liveAtCmp.end());
-
-        (void)bpHeader;
-        (void)bpLoopEnd;
-    }
-
-    {
-        auto G = buildGraph2();
-        analysis::LinearOrder ord;
-        ord.run(G.entry);
-        assertDominatorsBefore(ord, G.entry);
-        assertLoopContiguous(ord, ord.loops);
-
-        analysis::LivenessAnalysis LA;
-        LA.run(G.entry);
-
-        auto bpThen = LA.blockPosition(G.thenb);
-        auto bpElse = LA.blockPosition(G.elseb);
-        auto *liThen = LA.getInterval(G.inst_then_add);
-        auto *liElse = LA.getInterval(G.inst_else_add);
-        assert(liThen && liElse);
-        assert(liThen->end() == bpThen.to);
-        assert(liElse->end() == bpElse.to);
-
-        auto liveAtLoopCmp = LA.liveValuesAt(G.inst_cmp_loop);
-        auto *i = std::get<ir::SSAValue *>(G.inst_cmp_loop->operands()[0]);
-        auto *N = std::get<ir::SSAValue *>(G.inst_cmp_loop->operands()[1]);
-        assert(std::find(liveAtLoopCmp.begin(), liveAtLoopCmp.end(), i) != liveAtLoopCmp.end());
-        assert(std::find(liveAtLoopCmp.begin(), liveAtLoopCmp.end(), N) != liveAtLoopCmp.end());
-    }
-
-    {
-        auto G = buildGraph3();
-        analysis::LinearOrder ord;
-        ord.run(G.entry);
-        assertDominatorsBefore(ord, G.entry);
-        assertLoopContiguous(ord, ord.loops);
-
-        analysis::LivenessAnalysis LA;
-        LA.run(G.entry);
-
-        auto liveAtOuter = LA.liveValuesAt(G.inst_outer_cmp);
-        auto *i = std::get<ir::SSAValue *>(G.inst_outer_cmp->operands()[0]);
-        auto *N = std::get<ir::SSAValue *>(G.inst_outer_cmp->operands()[1]);
-        assert(std::find(liveAtOuter.begin(), liveAtOuter.end(), i) != liveAtOuter.end());
-        assert(std::find(liveAtOuter.begin(), liveAtOuter.end(), N) != liveAtOuter.end());
-
-        auto liveAtInner = LA.liveValuesAt(G.inst_inner_cmp);
-        auto *j = std::get<ir::SSAValue *>(G.inst_inner_cmp->operands()[0]);
-        auto *M = std::get<ir::SSAValue *>(G.inst_inner_cmp->operands()[1]);
-        assert(std::find(liveAtInner.begin(), liveAtInner.end(), j) != liveAtInner.end());
-        assert(std::find(liveAtInner.begin(), liveAtInner.end(), M) != liveAtInner.end());
-    }
+    testGraph1_LinearOrderAndLiveness();
+    testGraph2_LinearOrderAndLiveness();
+    testGraph3_LinearOrderAndLiveness();
 }
