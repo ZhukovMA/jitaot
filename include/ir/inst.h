@@ -405,4 +405,85 @@ class ShlInst : public Inst {
     }
 };
 
+class MoveInst : public Inst {
+    SSAValue *src_;
+    std::string dst_;
+
+  public:
+    MoveInst(SSAValue *src, std::string dst) : src_(src), dst_(std::move(dst)) {
+        if (src_)
+            src_->addUser(this);
+    }
+    Opcode opcode() const override {
+        return Opcode::MOVE_U64;
+    }
+    std::vector<Value> operands() const override {
+        return {Value{src_}, Value{dst_}};
+    }
+    void replaceOperand(SSAValue *from, SSAValue *to) override {
+        if (src_ == from) {
+            src_ = to;
+            to->addUser(this);
+        }
+    }
+    std::string toString() const override {
+        std::ostringstream oss;
+        oss << "move.u64    " << fmtVal(src_) << " -> " << dst_;
+        return oss.str();
+    }
+};
+
+class SpillInst : public Inst {
+    SSAValue *src_;
+    uint64_t slot_;
+
+  public:
+    SpillInst(SSAValue *src, uint64_t slot) : src_(src), slot_(slot) {
+        if (src_)
+            src_->addUser(this);
+    }
+    Opcode opcode() const override {
+        return Opcode::SPILL_U64;
+    }
+    std::vector<Value> operands() const override {
+        return {Value{src_}, Value{slot_}};
+    }
+    void replaceOperand(SSAValue *from, SSAValue *to) override {
+        if (src_ == from) {
+            src_ = to;
+            to->addUser(this);
+        }
+    }
+    std::string toString() const override {
+        std::ostringstream oss;
+        oss << "spill.u64   " << fmtVal(src_) << ", s" << slot_;
+        return oss.str();
+    }
+};
+
+class FillInst : public Inst {
+    SSAValue *res_;
+    uint64_t slot_;
+
+  public:
+    FillInst(SSAValue *res, uint64_t slot) : res_(res), slot_(slot) {
+        if (res_)
+            res_->def = this;
+    }
+    Opcode opcode() const override {
+        return Opcode::FILL_U64;
+    }
+    SSAValue *result() const override {
+        return res_;
+    }
+    std::vector<Value> operands() const override {
+        return {Value{slot_}};
+    }
+    std::string toString() const override {
+        std::ostringstream oss;
+        oss << "fill.u64    " << fmtVal(res_) << ", s" << slot_;
+        return oss.str();
+    }
+};
+
 } // namespace ir

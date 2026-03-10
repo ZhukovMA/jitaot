@@ -278,6 +278,10 @@ class LivenessAnalysis {
         return lin_;
     }
 
+    const std::unordered_map<ir::SSAValue *, LiveInterval> &intervals() const {
+        return intervals_;
+    }
+
     const LiveInterval *getInterval(ir::SSAValue *v) const {
         auto it = intervals_.find(v);
         return it == intervals_.end() ? nullptr : &it->second;

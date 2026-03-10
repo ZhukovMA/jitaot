@@ -94,6 +94,9 @@ int main() {
     // Linear order andd liveness
     testLinearOrderAndLiveness();
 
+    // Register allocator
+    testRegisterAllocator();
+
     std::cout << "All tests passed.\n";
 
     return 0;

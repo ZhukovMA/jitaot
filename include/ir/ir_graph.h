@@ -44,6 +44,9 @@ class IRGraph {
     SSAValue *createArg(const std::string &type, const std::string &name) {
         SSAValue *v = createValue(name);
         v->is_arg = true;
+        if (type.find('f') != std::string::npos || type.find('F') != std::string::npos) {
+            v->reg_class = RegClass::FLOAT;
+        }
 
         for (auto &a : func_args_) {
             if (a.name == name && a.type == type) {
@@ -101,6 +104,15 @@ class IRGraph {
     }
     std::unique_ptr<Inst> createShl(SSAValue *r, SSAValue *x, SSAValue *s) {
         return std::make_unique<ShlInst>(r, x, s);
+    }
+    std::unique_ptr<Inst> createMove(SSAValue *src, std::string dst) {
+        return std::make_unique<MoveInst>(src, std::move(dst));
+    }
+    std::unique_ptr<Inst> createSpill(SSAValue *src, uint64_t slot) {
+        return std::make_unique<SpillInst>(src, slot);
+    }
+    std::unique_ptr<Inst> createFill(SSAValue *res, uint64_t slot) {
+        return std::make_unique<FillInst>(res, slot);
     }
 
     void setSignature(std::string ret, std::string name, std::vector<Arg> args) {

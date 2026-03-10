@@ -12,6 +12,9 @@ enum class Opcode {
     RET_U64,
     PHI_U64,
     AND_U64,
-    SHL_U64
+    SHL_U64,
+    MOVE_U64,
+    SPILL_U64,
+    FILL_U64
 };
 }

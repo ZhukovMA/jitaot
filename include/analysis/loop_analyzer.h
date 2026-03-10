@@ -4,6 +4,7 @@
 #include <vector>
 #include <algorithm>
 #include <unordered_set>
+#include <functional>
 
 namespace ir {
 class BasicBlock;
@@ -11,6 +12,7 @@ class BasicBlock;
 
 #include "ir/basic_block.h"
 #include "ir/opcode.h"
+#include "analysis/dominator_tree.h"
 
 namespace analysis {
 using ir::BasicBlock;

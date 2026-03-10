@@ -41,6 +41,17 @@ class BasicBlock {
             insts.erase(it);
     }
 
+
+    void insertAfter(Inst *anchor, std::unique_ptr<Inst> nu) {
+        auto it = std::find_if(insts.begin(), insts.end(), [&](auto &p) { return p.get() == anchor; });
+        if (it == insts.end()) {
+            insts.push_back(std::move(nu));
+            return;
+        }
+        ++it;
+        insts.insert(it, std::move(nu));
+    }
+
     void addSuccessor(BasicBlock *succ) {
         successors.push_back(succ);
         succ->predecessors.push_back(this);

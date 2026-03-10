@@ -6,12 +6,19 @@
 
 namespace ir {
 class Inst; 
+
+enum class RegClass {
+    INT,
+    FLOAT
+};
+
 struct SSAValue {
     uint32_t id{};
     Inst *def{nullptr};
     std::vector<Inst *> users;
     bool is_arg{false};
     std::string dbg_name;
+    RegClass reg_class{RegClass::INT};
 
     void addUser(Inst *I) {
         users.push_back(I);
