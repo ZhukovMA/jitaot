@@ -67,6 +67,40 @@ class MoviInst : public Inst {
     }
 };
 
+class ParameterInst : public Inst {
+    SSAValue *res_;
+    size_t index_;
+
+  public:
+    ParameterInst(SSAValue *res, size_t index) : res_(res), index_(index) {
+        if (res_) {
+            res_->def = this;
+        }
+    }
+
+    Opcode opcode() const override {
+        return Opcode::PARAMETER;
+    }
+
+    SSAValue *result() const override {
+        return res_;
+    }
+
+    std::vector<Value> operands() const override {
+        return {Value{static_cast<uint64_t>(index_)}};
+    }
+
+    size_t index() const {
+        return index_;
+    }
+
+    std::string toString() const override {
+        std::ostringstream oss;
+        oss << "param.u64   " << fmtVal(res_) << ", #" << index_;
+        return oss.str();
+    }
+};
+
 class CastInst : public Inst {
     SSAValue *res_;
     SSAValue *src_;
@@ -150,6 +184,14 @@ class JaInst : public Inst {
     }
     std::string toString() const override {
         return "ja          " + bbName(target_);
+    }
+
+    BasicBlock *target() const {
+        return target_;
+    }
+
+    void setTarget(BasicBlock *target) {
+        target_ = target;
     }
 };
 
@@ -245,6 +287,80 @@ class JmpInst : public Inst {
     std::string toString() const override {
         return "jmp         " + bbName(target_);
     }
+
+    BasicBlock *target() const {
+        return target_;
+    }
+
+    void setTarget(BasicBlock *target) {
+        target_ = target;
+    }
+};
+
+class CallStaticInst : public Inst {
+    SSAValue *res_;
+    std::vector<SSAValue *> args_;
+    std::string callee_name_;
+
+  public:
+    CallStaticInst(SSAValue *res, std::vector<SSAValue *> args, std::string callee_name = "")
+        : res_(res), args_(std::move(args)), callee_name_(std::move(callee_name)) {
+        if (res_) {
+            res_->def = this;
+        }
+        for (auto *arg : args_) {
+            if (arg) {
+                arg->addUser(this);
+            }
+        }
+    }
+
+    Opcode opcode() const override {
+        return Opcode::CALL_STATIC_U64;
+    }
+
+    SSAValue *result() const override {
+        return res_;
+    }
+
+    const std::vector<SSAValue *> &args() const {
+        return args_;
+    }
+
+    const std::string &calleeName() const {
+        return callee_name_;
+    }
+
+    std::vector<Value> operands() const override {
+        std::vector<Value> ops;
+        ops.reserve(args_.size());
+        for (auto *arg : args_) {
+            ops.push_back(Value{arg});
+        }
+        return ops;
+    }
+
+    void replaceOperand(SSAValue *from, SSAValue *to) override {
+        for (auto &arg : args_) {
+            if (arg == from) {
+                arg = to;
+                to->addUser(this);
+            }
+        }
+    }
+
+    std::string toString() const override {
+        std::ostringstream oss;
+        oss << "call.static " << fmtVal(res_) << " = " << callee_name_ << "(";
+        for (size_t i = 0; i < args_.size(); ++i) {
+            if (i) {
+                oss << ", ";
+            }
+            oss << fmtVal(args_[i]);
+        }
+        oss << ")";
+        return oss.str();
+    }
 };
 
 class RetInst : public Inst {
@@ -263,6 +379,10 @@ class RetInst : public Inst {
     }
     std::string toString() const override {
         return "ret.u64     " + fmtVal(src_);
+    }
+
+    SSAValue *value() const {
+        return src_;
     }
 
     void replaceOperand(SSAValue *from, SSAValue *to) override {
@@ -303,6 +423,15 @@ class PhiInst : public Inst {
     }
     const auto &incomings() const {
         return sources_;
+    }
+    auto &incomingsMutable() {
+        return sources_;
+    }
+    void replaceIncomingBlock(BasicBlock *from, BasicBlock *to) {
+        for (auto &src : sources_) {
+            if (src.first == from)
+                src.first = to;
+        }
     }
     std::string toString() const override {
         std::ostringstream oss;

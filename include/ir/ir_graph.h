@@ -74,6 +74,9 @@ class IRGraph {
     std::unique_ptr<Inst> createMovi(SSAValue *res, uint64_t imm) {
         return std::make_unique<MoviInst>(res, imm);
     }
+    std::unique_ptr<Inst> createParameter(SSAValue *res, size_t index) {
+        return std::make_unique<ParameterInst>(res, index);
+    }
     std::unique_ptr<Inst> createCast(SSAValue *res, SSAValue *src) {
         return std::make_unique<CastInst>(res, src);
     }
@@ -91,6 +94,9 @@ class IRGraph {
     }
     std::unique_ptr<Inst> createJmp(BasicBlock *target) {
         return std::make_unique<JmpInst>(target);
+    }
+    std::unique_ptr<Inst> createCallStatic(SSAValue *res, std::vector<SSAValue *> args, std::string callee_name = "") {
+        return std::make_unique<CallStaticInst>(res, std::move(args), std::move(callee_name));
     }
     std::unique_ptr<Inst> createRet(SSAValue *src) {
         return std::make_unique<RetInst>(src);
@@ -135,6 +141,14 @@ class IRGraph {
             }
             std::cout << bb->toString();
         }
+    }
+
+    std::vector<BasicBlock *> allBlocks() const {
+        std::vector<BasicBlock *> out;
+        out.reserve(blocks.size());
+        for (auto &bb : const_cast<std::vector<std::unique_ptr<BasicBlock>> &>(blocks))
+            out.push_back(bb.get());
+        return out;
     }
 
     bool checkControlFlow(const std::map<std::string, std::vector<std::string>> &expected) const {
