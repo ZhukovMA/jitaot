@@ -23,3 +23,4 @@ void testPH_ShlRules();
 
 void testLinearOrderAndLiveness();
 void testRegisterAllocator();
+void testInlining();

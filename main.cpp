@@ -97,6 +97,9 @@ int main() {
     // Register allocator
     testRegisterAllocator();
 
+    // Inlining
+    testInlining();
+
     std::cout << "All tests passed.\n";
 
     return 0;
