@@ -534,6 +534,86 @@ class ShlInst : public Inst {
     }
 };
 
+
+class NullCheckInst : public Inst {
+    SSAValue *ref_;
+
+  public:
+    explicit NullCheckInst(SSAValue *ref) : ref_(ref) {
+        if (ref_)
+            ref_->addUser(this);
+    }
+
+    Opcode opcode() const override {
+        return Opcode::NULL_CHECK;
+    }
+
+    std::vector<Value> operands() const override {
+        return {Value{ref_}};
+    }
+
+    SSAValue *ref() const {
+        return ref_;
+    }
+
+    void replaceOperand(SSAValue *from, SSAValue *to) override {
+        if (ref_ == from) {
+            ref_ = to;
+            to->addUser(this);
+        }
+    }
+
+    std::string toString() const override {
+        return "nullcheck   " + fmtVal(ref_);
+    }
+};
+
+class BoundsCheckInst : public Inst {
+    SSAValue *index_;
+    SSAValue *length_;
+
+  public:
+    BoundsCheckInst(SSAValue *index, SSAValue *length) : index_(index), length_(length) {
+        if (index_)
+            index_->addUser(this);
+        if (length_)
+            length_->addUser(this);
+    }
+
+    Opcode opcode() const override {
+        return Opcode::BOUNDS_CHECK;
+    }
+
+    std::vector<Value> operands() const override {
+        return {Value{index_}, Value{length_}};
+    }
+
+    SSAValue *index() const {
+        return index_;
+    }
+
+    SSAValue *length() const {
+        return length_;
+    }
+
+    void replaceOperand(SSAValue *from, SSAValue *to) override {
+        if (index_ == from) {
+            index_ = to;
+            to->addUser(this);
+        }
+        if (length_ == from) {
+            length_ = to;
+            to->addUser(this);
+        }
+    }
+
+    std::string toString() const override {
+        std::ostringstream oss;
+        oss << "boundscheck " << fmtVal(index_) << ", " << fmtVal(length_);
+        return oss.str();
+    }
+};
+
 class MoveInst : public Inst {
     SSAValue *src_;
     std::string dst_;

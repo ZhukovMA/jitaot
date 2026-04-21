@@ -111,6 +111,12 @@ class IRGraph {
     std::unique_ptr<Inst> createShl(SSAValue *r, SSAValue *x, SSAValue *s) {
         return std::make_unique<ShlInst>(r, x, s);
     }
+    std::unique_ptr<Inst> createNullCheck(SSAValue *ref) {
+        return std::make_unique<NullCheckInst>(ref);
+    }
+    std::unique_ptr<Inst> createBoundsCheck(SSAValue *index, SSAValue *length) {
+        return std::make_unique<BoundsCheckInst>(index, length);
+    }
     std::unique_ptr<Inst> createMove(SSAValue *src, std::string dst) {
         return std::make_unique<MoveInst>(src, std::move(dst));
     }

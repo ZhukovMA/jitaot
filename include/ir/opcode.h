@@ -15,6 +15,8 @@ enum class Opcode {
     PHI_U64,
     AND_U64,
     SHL_U64,
+    NULL_CHECK,
+    BOUNDS_CHECK,
     MOVE_U64,
     SPILL_U64,
     FILL_U64

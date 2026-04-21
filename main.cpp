@@ -1,4 +1,5 @@
 #include "analysis/constant_folding.h"
+#include "analysis/dominated_checks.h"
 #include "analysis/peephole.h"
 #include "ir/ir_graph.h"
 #include "tests/test_functions.h"
@@ -99,6 +100,9 @@ int main() {
 
     // Inlining
     testInlining();
+
+    testDominatedNullChecks();
+    testDominatedBoundsChecks();
 
     std::cout << "All tests passed.\n";
 

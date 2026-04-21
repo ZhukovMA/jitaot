@@ -1,3 +1,4 @@
+#include <algorithm>
 #pragma once
 #include <cstdint>
 #include <string>
@@ -22,6 +23,10 @@ struct SSAValue {
 
     void addUser(Inst *I) {
         users.push_back(I);
+    }
+
+    void removeUser(Inst *I) {
+        users.erase(std::remove(users.begin(), users.end(), I), users.end());
     }
 };
 
